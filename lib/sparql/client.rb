@@ -305,8 +305,6 @@ module SPARQL
         request.auth.gssnegotiate
       end
       response = HTTPI.get(request)
-      puts response
-      puts response.body
       if block_given?
         block.call(response)
       else

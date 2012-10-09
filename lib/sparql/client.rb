@@ -140,7 +140,16 @@ module SPARQL
     # @param  [Hash{Symbol => Object}] options
     # @return [Object]
     def parse_response(response, options = {})
-      case content_type = options[:content_type] || response.headers["Content-Type"].split(';').first
+      content_type = nil
+      if (oct = options[:content_type])
+        content_type = oct
+      elsif (rh = response.headers["Content-Type"]).is_a?(Array)
+        content_type = rh.first.split(';').first
+      else
+        content_type = rh.split(';').first
+      end
+
+      case content_type
       when RESULT_BOOL # Sesame-specific
         response.body == 'true'
       when RESULT_JSON

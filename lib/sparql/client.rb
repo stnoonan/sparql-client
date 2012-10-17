@@ -144,7 +144,7 @@ module SPARQL
       if (oct = options[:content_type])
         content_type = oct
       elsif (rh = response.headers["Content-Type"]).is_a?(Array)
-        content_type = rh.first.split(';').first
+        content_type = rh.last.split(';').first
       else
         content_type = rh.split(';').first
       end

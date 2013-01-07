@@ -303,9 +303,7 @@ module SPARQL
     # @return [HTTPI::Response]
     def get(query, headers = {}, &block)
       url = self.url.dup
-      url.query_values ||= {}
-      url.query_values = url.query_values.merge({:query => query.to_s})
-
+      url.query_values = (url.query_values || {}).merge(:query => query.to_s)
       request = http_request(url)
       request.headers = @headers.merge(headers)
       if url.user && !url.user.empty?

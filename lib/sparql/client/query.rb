@@ -154,6 +154,17 @@ module SPARQL; class Client
     alias_method :order_by, :order
 
     ##
+    # @param  [Array<Symbol, String>] variables
+    # @return [Query]
+    # @see    http://www.w3.org/TR/sparql11-query/#groupby
+    def group(*variables)
+      options[:group_by] = variables
+      self
+    end
+
+    alias_method :group_by, :group
+
+    ##
     # @return [Query]
     # @see    http://www.w3.org/TR/rdf-sparql-query/#modDistinct
     def distinct(state = true)
@@ -225,7 +236,7 @@ module SPARQL; class Client
     ##
     # @private
     def filter(string)
-      ((options[:filters] ||= []) << string) if string and not string.empty
+      ((options[:filters] ||= []) << string) if string and not string.empty?
       self
     end
 
@@ -289,9 +300,15 @@ module SPARQL; class Client
       buffer = [form.to_s.upcase]
       case form
         when :select, :describe
-          buffer << 'DISTINCT' if options[:distinct]
+          only_count = values.empty? and options[:count]
+          buffer << 'DISTINCT' if options[:distinct] and not only_count
           buffer << 'REDUCED'  if options[:reduced]
-          buffer << (values.empty? ? '*' : values.map { |v| serialize_value(v[1]) }.join(' '))
+          buffer << ((values.empty? and not options[:count]) ? '*' : values.map { |v| serialize_value(v[1]) }.join(' '))
+          if options[:count]
+            options[:count].each do |var, count|
+              buffer << '( COUNT(' + (options[:distinct] ? 'DISTINCT ' : '') + (var.is_a?(String) ? var : "?#{var}") + ') AS ' + (count.is_a?(String) ? count : "?#{count}") + ' )'
+            end
+          end
         when :construct
           buffer << '{'
           buffer += serialize_patterns(options[:template])
@@ -314,6 +331,11 @@ module SPARQL; class Client
           buffer += options[:filters].map { |filter| "FILTER(#{filter})" }
         end
         buffer << '}'
+      end
+
+      if options[:group_by]
+        buffer << 'GROUP BY'
+        buffer += options[:group_by].map { |var| var.is_a?(String) ? var : "?#{var}" }
       end
 
       if options[:order_by]
